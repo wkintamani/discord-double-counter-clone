@@ -360,7 +360,7 @@ app.get('/auth/callback', async (req, res) => {
  */
 function startServer() {
   const port = process.env.PORT || 3000;
-  app.listen(port, () => {
+  app.listen(port, '0.0.0.0', () => {
     console.log(`[Web Server] Running on port ${port}`);
     console.log(`[Web Server] Redirect URI registered as: ${process.env.REDIRECT_URI}`);
   });
