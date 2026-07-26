@@ -216,6 +216,7 @@ app.get('/auth/callback', async (req, res) => {
         .setTimestamp();
 
       await sendAltLogMessage(guildId, deviceEmbed);
+      await db.addVerification(userId, guildId, ipHash, 'Alt Device Blocked', deviceFp, 'blocked_alt_device');
       return res.status(403).send(renderErrorPage('alt', username, avatarUrl, guildName));
     }
 
@@ -254,6 +255,7 @@ app.get('/auth/callback', async (req, res) => {
         .setTimestamp();
       
       await sendAltLogMessage(guildId, altEmbed);
+      await db.addVerification(userId, guildId, ipHash, 'Alt IP Blocked', deviceFp, 'blocked_alt_ip');
       return res.status(403).send(renderErrorPage('alt', username, avatarUrl, guildName));
     }
 
@@ -286,6 +288,7 @@ app.get('/auth/callback', async (req, res) => {
         .setTimestamp();
 
       await sendLogMessage(guildId, vpnEmbed);
+      await db.addVerification(userId, guildId, ipHash, checkResult.type, deviceFp, checkResult.isVpn ? 'blocked_vpn' : 'blocked_proxy');
       return res.status(403).send(renderErrorPage(type, username, avatarUrl, guildName));
     }
 

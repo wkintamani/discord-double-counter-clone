@@ -47,6 +47,7 @@ async function initDatabase() {
       ip_hash TEXT,
       ip_type TEXT,
       device_fp TEXT,
+      status TEXT DEFAULT 'verified',
       verified_at INTEGER,
       PRIMARY KEY (user_id, guild_id)
     )
@@ -55,6 +56,13 @@ async function initDatabase() {
   // Migration: Add device_fp column if database already exists without it
   try {
     await db.exec(`ALTER TABLE verifications ADD COLUMN device_fp TEXT`);
+  } catch (e) {
+    // Column already exists, safe to ignore
+  }
+
+  // Migration: Add status column if database already exists without it
+  try {
+    await db.exec(`ALTER TABLE verifications ADD COLUMN status TEXT DEFAULT 'verified'`);
   } catch (e) {
     // Column already exists, safe to ignore
   }
@@ -106,17 +114,19 @@ async function getVerification(userId, guildId) {
  * @param {string} ipHash 
  * @param {string} ipType 
  * @param {string} deviceFp
+ * @param {string} status
  */
-async function addVerification(userId, guildId, ipHash, ipType, deviceFp) {
+async function addVerification(userId, guildId, ipHash, ipType, deviceFp, status = 'verified') {
   return await db.run(
-    `INSERT INTO verifications (user_id, guild_id, ip_hash, ip_type, device_fp, verified_at)
-     VALUES (?, ?, ?, ?, ?, ?)
+    `INSERT INTO verifications (user_id, guild_id, ip_hash, ip_type, device_fp, status, verified_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(user_id, guild_id) DO UPDATE SET
       ip_hash = excluded.ip_hash,
       ip_type = excluded.ip_type,
       device_fp = excluded.device_fp,
+      status = excluded.status,
       verified_at = excluded.verified_at`,
-    [userId, guildId, ipHash, ipType, deviceFp || 'unknown', Date.now()]
+    [userId, guildId, ipHash, ipType, deviceFp || 'unknown', status, Date.now()]
   );
 }
 
@@ -128,7 +138,7 @@ async function addVerification(userId, guildId, ipHash, ipType, deviceFp) {
  * @returns {Promise<Array<object>>}
  */
 async function getDuplicateIps(guildId, ipHash) {
-  return await db.all('SELECT user_id FROM verifications WHERE guild_id = ? AND ip_hash = ?', [guildId, ipHash]);
+  return await db.all("SELECT user_id FROM verifications WHERE guild_id = ? AND ip_hash = ? AND status = 'verified'", [guildId, ipHash]);
 }
 
 /**
@@ -139,7 +149,7 @@ async function getDuplicateIps(guildId, ipHash) {
  */
 async function getDuplicateDevices(guildId, deviceFp) {
   if (!deviceFp || deviceFp === 'unknown') return [];
-  return await db.all('SELECT user_id FROM verifications WHERE guild_id = ? AND device_fp = ?', [guildId, deviceFp]);
+  return await db.all("SELECT user_id FROM verifications WHERE guild_id = ? AND device_fp = ? AND status = 'verified'", [guildId, deviceFp]);
 }
 
 /**
@@ -154,6 +164,7 @@ async function getAllVerificationsWithAlts(guildId) {
       v.ip_hash,
       v.ip_type,
       v.device_fp,
+      v.status,
       v.verified_at,
       (SELECT GROUP_CONCAT(v2.user_id) FROM verifications v2 WHERE v2.guild_id = v.guild_id AND v2.ip_hash = v.ip_hash AND v2.user_id != v.user_id) as alt_ips,
       (SELECT GROUP_CONCAT(v3.user_id) FROM verifications v3 WHERE v3.guild_id = v.guild_id AND v3.device_fp = v.device_fp AND v3.device_fp != 'unknown' AND v3.device_fp IS NOT NULL AND v3.user_id != v.user_id) as alt_devices

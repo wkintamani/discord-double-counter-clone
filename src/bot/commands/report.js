@@ -49,9 +49,10 @@ module.exports = {
       worksheet.columns = [
         { header: 'Discord User ID', key: 'userId', width: 22 },
         { header: 'Username / Tag', key: 'username', width: 25 },
-        { header: 'Verified At (Local)', key: 'verifiedAt', width: 25 },
+        { header: 'Verified/Attempt At (Local)', key: 'verifiedAt', width: 25 },
         { header: 'IP Hash (SHA-256)', key: 'ipHash', width: 35 },
         { header: 'Connection Type', key: 'ipType', width: 18 },
+        { header: 'Status', key: 'status', width: 15 },
         { header: 'Device Fingerprint', key: 'deviceFp', width: 35 },
         { header: 'Alt Accounts (Same IP)', key: 'altIps', width: 45 },
         { header: 'Alt Accounts (Same Device)', key: 'altDevices', width: 45 }
@@ -108,6 +109,7 @@ module.exports = {
           verifiedAt: verifiedDate,
           ipHash: v.ip_hash || 'N/A',
           ipType: v.ip_type || 'N/A',
+          status: v.status || 'verified',
           deviceFp: v.device_fp || 'N/A',
           altIps: altIpList,
           altDevices: altDeviceList
@@ -136,7 +138,7 @@ module.exports = {
           };
 
           // Alignment
-          if (colNumber === 1 || colNumber === 3 || colNumber === 5) {
+          if (colNumber === 1 || colNumber === 3 || colNumber === 5 || colNumber === 6) {
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
           } else {
             cell.alignment = { horizontal: 'left', vertical: 'middle' };
@@ -158,8 +160,23 @@ module.exports = {
             };
           }
 
+          // Highlight Status
+          if (colNumber === 6) {
+            const statusVal = v.status || 'verified';
+            if (statusVal === 'verified') {
+              cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FF10B981' } }; // Green
+            } else {
+              cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FFDC2626' } }; // Red
+              cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FEE2E2' } // Light red fill
+              };
+            }
+          }
+
           // Highlight Alt accounts from same IP
-          if (colNumber === 7 && hasAltIps) {
+          if (colNumber === 8 && hasAltIps) {
             cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FFDC2626' } }; // Red
             cell.fill = {
               type: 'pattern',
@@ -169,7 +186,7 @@ module.exports = {
           }
 
           // Highlight Alt accounts from same browser/device fingerprint
-          if (colNumber === 8 && hasAltDevices) {
+          if (colNumber === 9 && hasAltDevices) {
             cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FFDC2626' } }; // Red
             cell.fill = {
               type: 'pattern',
