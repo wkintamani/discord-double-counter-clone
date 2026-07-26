@@ -30,6 +30,7 @@ module.exports = {
     await interaction.deferReply({ ephemeral: true });
 
     const guildId = interaction.guildId;
+    console.log(`[Discord Bot] /setup-verification run by ${interaction.user.tag}. BASE_URL = ${process.env.BASE_URL}`);
     const verifyChannel = interaction.options.getChannel('verify-channel');
     const logChannel = interaction.options.getChannel('log-channel');
     const altLogChannel = interaction.options.getChannel('alt-log-channel');
